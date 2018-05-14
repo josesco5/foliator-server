@@ -1,11 +1,10 @@
 require 'sinatra/base'
-require 'document/foliator'
+require './app/foliator_manager'
 
 class FoliatorApp < Sinatra::Application
   configure { set :server, :puma }
 
-  get '/' do
-    puts Document::Foliator::VERSION
-    'Hello World'
+  post '/' do
+    FoliatorManager.process request.body.read
   end
 end
