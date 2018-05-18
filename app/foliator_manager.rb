@@ -32,12 +32,13 @@ class FoliatorManager
           )
           if foliated_pdf
             puts "File at #{file_url}. Pages of foliated document: #{foliated_pdf.pages.count}"
+            pages_count = foliated_pdf.pages.count
 
             file_name = File.basename(file_url)
             temp_file_path = save_temp_pdf(foliated_pdf)
             puts temp_file_path
 
-            send_file_to_s3(temp_file_path, file_name, s3_options, cookie)
+            send_file_to_s3(temp_file_path, file_name, pages_count, s3_options, cookie)
           else
             puts "File at #{file_url} could not be foliated"
           end
@@ -63,7 +64,7 @@ class FoliatorManager
       puts response.body
     end
 
-    def send_file_to_s3(file_path, file_name, s3_options, cookie)
+    def send_file_to_s3(file_path, file_name, pages_count, s3_options, cookie)
       puts "send_file_to_s3 multipart"
 
       key = s3_options[:key]
@@ -101,6 +102,7 @@ class FoliatorManager
         if (response.code.to_i == 303)
           puts 'File sent successfully to S3'
           attachment_url = response['Location']
+          attachment_url += "&pages_count=#{pages_count}"
 
           puts "url: #{attachment_url}"
           if !attachment_url.start_with? "http://localhost:3000"
