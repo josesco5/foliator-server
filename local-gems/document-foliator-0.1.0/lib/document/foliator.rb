@@ -42,6 +42,10 @@ module Document
 
       folio = start_folio
       (1..number_of_pages).each do |i|
+        page = pdf.pages[i - 1]
+        bounds = folios_pdf.bounds
+        page_rotation = page[:Rotate] || 0
+
         top_right = folios_pdf.bounds.top_right
         if !every_other_page || (every_other_page && step)
           if double_sided
@@ -58,10 +62,31 @@ module Document
           end
 
           text_width = folios_pdf.width_of(page_number_text, size: text_size)
-          folio_position = [top_right[0] - text_width - pixels_to_left.to_i, top_right[1]]
-          folios_pdf.draw_text page_number_text, :at => folio_position, :size => text_size
           human_number = NumberToHuman.number_to_human(number_print).to_s
-          folios_pdf.draw_text human_number, :at => [top_right[0] - folios_pdf.width_of(human_number, size: text_size) - pixels_to_left.to_i, top_right[1] - text_size], :size => text_size
+
+          if page_rotation == 90
+            top_left = bounds.bottom_left
+            top_right = bounds.top_left
+            folio_position = [top_right[0] , top_right[1] - text_width -  pixels_to_left.to_i]
+            human_number_position = [top_right[0] + text_size, top_right[1] - folios_pdf.width_of(human_number, size: text_size) + pixels_to_left.to_i]
+          elsif page_rotation == 180
+            top_right = bounds.bottom_left
+            folio_position = [top_right[0] + text_width + pixels_to_left.to_i, top_right[1]]
+            human_number_position = [top_right[0] + folios_pdf.width_of(human_number, size: text_size) + pixels_to_left.to_i, top_right[1] + text_size]
+          elsif page_rotation == 270
+            top_left = bounds.top_right
+            top_right = bounds.bottom_right
+            folio_position = [top_right[0] + text_size, top_right[1] + text_width + pixels_to_left.to_i]
+            human_number_position = [top_right[0], top_right[1] + folios_pdf.width_of(human_number, size: text_size) + pixels_to_left.to_i]
+          else
+            top_left = bounds.top_left
+            top_right = bounds.top_right
+            folio_position = [top_right[0] - text_width - pixels_to_left.to_i, top_right[1]]
+            human_number_position = [top_right[0] - folios_pdf.width_of(human_number, size: text_size) - pixels_to_left.to_i, top_right[1] - text_size]
+          end
+
+          folios_pdf.draw_text page_number_text, at: folio_position, size: text_size, rotate: page_rotation
+          folios_pdf.draw_text human_number, at: human_number_position, size: text_size, rotate: page_rotation
           folio += 1
         end
 
